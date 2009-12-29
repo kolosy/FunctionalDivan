@@ -17,14 +17,16 @@ module Dsl =
     let offsetBy offset (query: CouchQuery) = query.Skip offset
     let startAt (startKey: obj) (query: CouchQuery) = query.StartKey startKey
     let endAt (endKey: obj) (query: CouchQuery) = query.EndKey endKey
+    let startAtId startKey (query: CouchQuery) = query.StartKeyDocumentId startKey
+    let endAtId endKey (query: CouchQuery) = query.EndKeyDocumentId endKey
     let select (query: CouchQuery) = query.GetResult()
     let selectDocs<'a when 'a: (new: unit -> 'a) and 'a:> ICouchDocument> (query: CouchQuery) = 
         List.ofSeq <| query.IncludeDocuments().GetResult().Documents<'a>()
 
     let selectRecords<'a> (query: CouchQuery) = 
-        let results = (select query).Documents<CouchJsonDocument>()
+        let results = (select <| query.IncludeDocuments()).Documents<CouchJsonDocument>()
         List.ofSeq results |>
-        List.map (fun elem -> readJson typeof<'a> elem.Obj) 
+        List.map (fun elem -> (readJson typeof<'a> elem.Obj) :?> 'a) 
         
     let from<'a> (db: CouchDatabase) id =
         let jsonDoc = db.GetDocument(id)
@@ -65,7 +67,7 @@ module Dsl =
         let selectDocs<'a when 'a: (new: unit -> 'a) and 'a:> ICouchDocument> (query: CouchLuceneQuery) = 
             List.ofSeq <| query.IncludeDocuments().GetResult().GetDocuments<'a>()
         let selectRecords<'a> (query: CouchLuceneQuery) = 
-            let results = (select query).GetDocuments<CouchJsonDocument>()
+            let results = (select <| query.IncludeDocuments()).GetDocuments<CouchJsonDocument>()
             List.ofSeq results |>
-            List.map (fun elem -> readJson typeof<'a> elem.Obj) 
+            List.map (fun elem -> (readJson typeof<'a> elem.Obj) :?> 'a) 
         

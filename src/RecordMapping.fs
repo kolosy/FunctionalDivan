@@ -2,8 +2,9 @@
 
 namespace FunctionalDivan 
 
-module RecordMapping =
+module internal RecordMapping =
     open Microsoft.FSharp.Reflection
+    open Microsoft.FSharp.Collections
     open System.Reflection
     
     open Newtonsoft.Json.Linq
@@ -19,19 +20,30 @@ module RecordMapping =
     | "_id" -> "id"
     | _ as v -> v
 
+    let private listGenerator = System.Type.GetType("FunctionalDivan.RecordMapping").GetMethod("makeGenericList", BindingFlags.NonPublic ||| BindingFlags.Static)
+    let private arrayGenerator = System.Type.GetType("FunctionalDivan.RecordMapping").GetMethod("makeGenericArray", BindingFlags.NonPublic ||| BindingFlags.Static)
+    
+    let private makeGenericList<'a> (size: int) elemType (generator: int -> obj) = 
+        List.init size (fun i -> (generator i) :?> 'a)
+
+    let private makeGenericArray<'a> (size: int) elemType (generator: int -> obj) = 
+        Array.init size (fun i -> (generator i) :?> 'a)
+
     let rec readJson recordType (jObj: JObject) =
         let t = FSharpType.GetRecordFields(recordType)
 
-        let rec readValue targetType (value: JToken) = 
+        let rec readValue targetType (value: JToken) asList = 
             match value with
             | :? JObject as nestedObj -> readJson targetType nestedObj
             | :? JArray as nestedArray -> 
-                (Array.init 
-                    nestedArray.Count 
-                    (fun i -> 
-                        match nestedArray.[i] with
-                        | :? JValue as v -> v.Value
-                        | _ as other -> readValue targetType other)) :> obj
+                (if asList then listGenerator else arrayGenerator)
+                    .MakeGenericMethod([|targetType|]).Invoke(
+                        null, 
+                        [|(nestedArray.Count); recordType;
+                            (fun i -> 
+                                match nestedArray.[i] with
+                                | :? JValue as v -> v.Value
+                                | _ as other -> readValue targetType other false)|])
             | :? JValue as v -> v.Value
             | _ as unk -> failwith <| sprintf "%A is an unsupported node type" unk
 
@@ -40,12 +52,12 @@ module RecordMapping =
                 t.Length
                 (fun i ->
                     let pType = t.[i].PropertyType
-                    if (pType.IsArray) then readValue (pType.GetElementType()) (jObj.[normalizeName t.[i].Name])
-                    elif pType.IsGenericType then readValue (pType.GetGenericArguments().[0]) (jObj.[normalizeName t.[i].Name])
-                    else readValue (pType) (jObj.[normalizeName t.[i].Name])
+                    if (pType.IsArray) then readValue (pType.GetElementType()) (jObj.[normalizeName t.[i].Name]) false
+                    elif pType.IsGenericType then readValue (pType.GetGenericArguments().[0]) (jObj.[normalizeName t.[i].Name]) true
+                    else readValue (pType) (jObj.[normalizeName t.[i].Name]) false
                 )
                 
-        recordType.GetConstructor(Array.map (fun (e: PropertyInfo) -> e.PropertyType) t).Invoke values
+        FSharpValue.MakeRecord(recordType, values)
 
     let rec writeJson record (writer: JsonWriter) =
         let rec writeValue (value: obj) = 
