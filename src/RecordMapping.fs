@@ -59,13 +59,26 @@ module internal RecordMapping =
                 
         FSharpValue.MakeRecord(recordType, values)
 
-    let rec writeJson record (writer: JsonWriter) =
+    let rec writeJson record (writer: JsonWriter) includeType =
+        if includeType then 
+            writer.WritePropertyName("record_type")
+            writer
+                .WriteValue(record.GetType()
+                .Name
+                .Substring(
+                            System.Math.Max(
+                                            System
+                                                .Math
+                                                .Max(record.GetType().Name.LastIndexOf("."), record.GetType().Name.LastIndexOf("+")),
+                                            0)))
+        else ()
+    
         let rec writeValue (value: obj) = 
             if value = null then () 
             else
                 if FSharpType.IsRecord(value.GetType()) then
                     writer.WriteStartObject()
-                    writeJson value writer
+                    writeJson value writer false
                     writer.WriteEndObject()
                 elif not (value.GetType() = typeof<System.String>) && typeof<System.Collections.IEnumerable>.IsAssignableFrom(value.GetType()) then
                     writer.WriteStartArray()

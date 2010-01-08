@@ -31,7 +31,7 @@
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <StartAction>Program</StartAction>
-    <StartProgram>c:\Program Files\NUnit 2.5.3\bin\net-2.0\nunit-x86.exe</StartProgram>
+    <StartProgram>c:\Program Files\NUnit 2.5.2\bin\net-2.0\nunit-x86.exe</StartProgram>
     <StartArguments>/run UnitTests.dll</StartArguments>
   </PropertyGroup>
   <ItemGroup>

@@ -33,7 +33,7 @@ module Dsl =
         if not (jsonDoc = null) then Some <| (readJson typeof<'a> (jsonDoc.Obj) :?> 'a)
         else None
         
-    let into (db: CouchDatabase) r =
+    let internal saveRecord (db: CouchDatabase) r includeType =
         let parms, hasId, hasRev = 
             Array.fold 
                 (fun s (e: PropertyInfo) -> 
@@ -49,17 +49,21 @@ module Dsl =
             ignore <| db.SaveDocument
                 { new ICouchDocument with 
                     member x.ReadJson jObj = ()
-                    member x.WriteJson writer = writeJson r writer
+                    member x.WriteJson writer = writeJson r writer includeType
                     member x.Id with get() = !_id and set v = _id := v
                     member x.Rev with get() = !_rev and set v = _rev := v }
             
             !_id, !_rev
 
+    let into (db: CouchDatabase) r = saveRecord db r true
+
+    let intoSilent (db: CouchDatabase) r = saveRecord db r false
+
         
     module Fti =
         open Divan.Lucene
     
-        let query name index (db: CouchDatabase) = db.Query(CouchLuceneViewDefinition(name, index, null))
+        let query name index (db: CouchDatabase) = db.Query(CouchLuceneViewDefinition(index, new CouchDesignDocument(name, db)))
         let q text (query: CouchLuceneQuery) = query.Q text
         let limitTo limit (query: CouchLuceneQuery) = query.Limit limit
         let offsetBy offset (query: CouchLuceneQuery) = query.Skip offset

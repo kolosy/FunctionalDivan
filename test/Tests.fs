@@ -54,7 +54,7 @@ module Test =
             
     [<TestFixture>]
     type ViewTests() =
-        let svr = server "localhost" 5984
+        let svr = server "172.16.10.78" 5984
         let database = db "view_tests" svr
         do ignore <| database.NewDesignDocument("people").AddView("names", "function (doc) { emit(doc.firstname, null); }")
         do database.SynchDesignDocuments()
