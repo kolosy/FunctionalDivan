@@ -1,6 +1,6 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 10.00
-# Visual Studio 2008
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FunctionalDivan", "src\FunctionalDivan.fsproj", "{1D9E1B95-4D9C-4EB3-82C5-A2A037EF8FBB}"
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "UnitTests", "test\UnitTests.fsproj", "{96779A8E-8049-4AAD-A223-3E4C943B6BB7}"

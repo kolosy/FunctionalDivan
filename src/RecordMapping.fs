@@ -44,7 +44,11 @@ module internal RecordMapping =
                                 match nestedArray.[i] with
                                 | :? JValue as v -> v.Value
                                 | _ as other -> readValue targetType other false)|])
-            | :? JValue as v -> v.Value
+            | :? JValue as v -> 
+                if typeof<System.Enum>.IsAssignableFrom(targetType) then
+                    System.Enum.ToObject(targetType, v.Value :?> System.Int64)
+                else
+                    v.Value
             | _ as unk -> failwith <| sprintf "%A is an unsupported node type" unk
 
         let values = 

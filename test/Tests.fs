@@ -21,9 +21,19 @@ module Test =
         otherAddresses: address list
     }
 
+    type someEnum =
+    | foo = 0
+    | bar = 1
+
+    type enumRec = {
+        id: string
+        rev: string
+        e: someEnum
+    }
+
     [<TestFixture>]
     type CRUDTests() =
-        let svr = server "172.16.10.78" 5984
+        let svr = server "localhost" 5984
         let database = db "crud_tests" svr
         
         let addy = { street = "michigan ave"; zip = "60606" }
@@ -52,9 +62,18 @@ module Test =
             Assert.That(r.IsSome, "no record found")
             Assert.AreEqual("mytest", r.Value.id)
             
+        [<Test>]
+        member x.CanReadEnum() =
+            let id, rev = { id = null; rev = null; e = someEnum.foo } |> into database
+            Assert.NotNull(id)
+            Assert.NotNull(rev)
+            let (r: enumRec option) = id |> from database
+            Assert.That(r.IsSome, "no record found")
+            Assert.AreEqual(id, r.Value.id)
+
     [<TestFixture>]
     type ViewTests() =
-        let svr = server "172.16.10.78" 5984
+        let svr = server "localhost" 5984
         let database = db "view_tests" svr
         do ignore <| database.NewDesignDocument("people").AddView("names", "function (doc) { emit(doc.firstname, null); }")
         do database.SynchDesignDocuments()
@@ -86,3 +105,4 @@ module Test =
                 )
                 
             Assert.AreEqual(2, List.length result)
+            
