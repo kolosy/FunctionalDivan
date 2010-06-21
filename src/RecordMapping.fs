@@ -32,6 +32,12 @@ module internal RecordMapping =
     let rec readJson recordType (jObj: JObject) =
         let t = FSharpType.GetRecordFields(recordType)
 
+        let convertTo targetType (v: JValue) =
+            if typeof<System.Enum>.IsAssignableFrom(targetType) then
+                System.Enum.ToObject(targetType, v.Value :?> System.Int64)
+            else
+                System.Convert.ChangeType(v.Value,targetType)
+
         let rec readValue targetType (value: JToken) asList = 
             match value with
             | :? JObject as nestedObj -> readJson targetType nestedObj
@@ -42,13 +48,9 @@ module internal RecordMapping =
                         [|(nestedArray.Count); recordType;
                             (fun i -> 
                                 match nestedArray.[i] with
-                                | :? JValue as v -> v.Value
+                                | :? JValue as v -> convertTo targetType v
                                 | _ as other -> readValue targetType other false)|])
-            | :? JValue as v -> 
-                if typeof<System.Enum>.IsAssignableFrom(targetType) then
-                    System.Enum.ToObject(targetType, v.Value :?> System.Int64)
-                else
-                    v.Value
+            | :? JValue as v -> convertTo targetType v
             | _ as unk -> failwith <| sprintf "%A is an unsupported node type" unk
 
         let values = 
